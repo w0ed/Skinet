@@ -1,3 +1,4 @@
+using Core.Interfaces;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,6 +14,7 @@ builder.Services.AddDbContext<StoreContext>(opt=>
 {
     opt.UseSqlite(builder.Configuration.GetConnectionString("DefaulTConnection"));
 });
+builder.Services.AddScoped<IProductRespository, ProductRepository>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -27,5 +29,18 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+using var scope = app.Services.CreateScope();
+var services = scope.ServiceProvider;
+var context = services.GetRequiredService<StoreContext>();
+var logger = services.GetRequiredService<Logger<Program>>();
+try
+{
+    await context.Database.MigrateAsync();
+}
+catch (Exception ex)
+{
+    logger.LogError(ex,"Error Occured");
+}
+
 
 app.Run();
